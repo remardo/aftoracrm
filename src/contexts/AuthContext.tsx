@@ -32,22 +32,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    let active = true;
+    let refreshTimer: number | undefined;
+
+    const applySession = (nextSession: any) => {
+      setSession(nextSession);
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+      if (!nextSession) {
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      refreshTimer = window.setTimeout(() => {
+        void refresh().finally(() => {
+          if (active) setLoading(false);
+        });
+      }, 0);
+    };
+
     supabase.auth.getSession()
-      .then(({ data }) => {
-        setSession(data.session);
-        if (data.session) window.setTimeout(() => void refresh(), 0);
-      })
-      .catch(() => setSession(null))
-      .finally(() => setLoading(false));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s);
-      setLoading(false);
-      // Supabase holds its auth lock while this callback runs. Refreshing the
-      // profile immediately calls getSession() again and can deadlock reloads.
-      if (s) window.setTimeout(() => void refresh(), 0);
-      else setProfile(null);
-    });
-    return () => subscription.unsubscribe();
+      .then(({ data }) => applySession(data.session))
+      .catch(() => applySession(null));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => applySession(s));
+    return () => {
+      active = false;
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+      subscription.unsubscribe();
+    };
   }, [refresh]);
 
   const value: AuthValue = {
