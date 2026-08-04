@@ -32,15 +32,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-      if (data.session) void refresh();
-    });
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        setSession(data.session);
+        if (data.session) window.setTimeout(() => void refresh(), 0);
+      })
+      .catch(() => setSession(null))
+      .finally(() => setLoading(false));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
       setLoading(false);
-      if (s) void refresh();
+      // Supabase holds its auth lock while this callback runs. Refreshing the
+      // profile immediately calls getSession() again and can deadlock reloads.
+      if (s) window.setTimeout(() => void refresh(), 0);
       else setProfile(null);
     });
     return () => subscription.unsubscribe();
