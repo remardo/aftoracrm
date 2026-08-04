@@ -9,11 +9,8 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
   const token = await getToken();
   const res = await fetch(path, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
+    signal: AbortSignal.timeout(15000),
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(options.headers || {}) },
   });
   if (!res.ok) {
     let msg = `Ошибка ${res.status}`;
