@@ -34,5 +34,6 @@ on conflict (email) do update set
   dealer_id = excluded.dealer_id, status = 'active';
 
 update auth.users
-set instance_id = '00000000-0000-0000-0000-000000000000', encrypted_password = crypt('password123', gen_salt('bf'))
+set instance_id = '00000000-0000-0000-0000-000000000000', encrypted_password = crypt('password123', gen_salt('bf')),
+  confirmation_token = '', recovery_token = '', email_change_token_new = '', email_change = '', email_change_token_current = '', reauthentication_token = ''
 where email in ('admin@aftora.ru', 'manager@aftora.ru', 'dealer@aftora.ru', 'dm@aftora.ru');
