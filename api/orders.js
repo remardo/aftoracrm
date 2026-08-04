@@ -86,6 +86,9 @@ export default async function handler(req, res) {
       if (!isFactory(profile) && !['cancelled'].includes(status)) {
         return res.status(403).json({ error: 'Изменение статуса доступно только фабрике' });
       }
+      if (!isFactory(profile) && order.dealer_id !== profile.dealer_id) {
+        return res.status(403).json({ error: 'Нет доступа к этому заказу' });
+      }
       const updates = { status, updated_at: new Date().toISOString() };
       const now = new Date().toISOString();
       if (status === 'confirmed') updates.confirmed_at = now;

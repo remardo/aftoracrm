@@ -13,6 +13,8 @@ export default async function handler(req, res) {
     if (!requireProfile(profile, res)) return;
 
     if (req.method === 'GET') {
+      const { data: ticket } = await supabase.from('tickets').select('dealer_id').eq('id', req.query.ticket_id).single();
+      if (!ticket || (!isFactory(profile) && ticket.dealer_id !== profile.dealer_id)) return res.status(403).json({ error: 'Нет доступа' });
       const { data, error: qerr } = await supabase.from('ticket_messages')
         .select('*').eq('ticket_id', req.query.ticket_id).order('created_at', { ascending: true });
       if (qerr) throw qerr;
@@ -20,11 +22,11 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { ticket_id, message, author_role } = req.body;
+      const { ticket_id, message } = req.body;
       const { data: ticket } = await supabase.from('tickets').select('dealer_id,status').eq('id', ticket_id).single();
       if (!ticket) return res.status(404).json({ error: 'Обращение не найдено' });
       if (!isFactory(profile) && ticket.dealer_id !== profile.dealer_id) return res.status(403).json({ error: 'Нет доступа' });
-      const role = author_role || (isFactory(profile) ? 'factory' : 'dealer');
+      const role = isFactory(profile) ? 'factory' : 'dealer';
       const { data, error: ierr } = await supabase.from('ticket_messages').insert({
         ticket_id, author_email: user.email, author_role: role, author_name: profile.full_name, message,
       }).select().single();

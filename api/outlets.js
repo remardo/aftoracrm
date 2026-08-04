@@ -35,6 +35,10 @@ export default async function handler(req, res) {
 
     if (req.method === 'PUT') {
       const { id, ...fields } = req.body;
+      if (!isFactory(profile)) {
+        const { data: outlet } = await supabase.from('outlets').select('dealer_id').eq('id', id).single();
+        if (!outlet || outlet.dealer_id !== profile.dealer_id) return res.status(403).json({ error: 'Нет доступа' });
+      }
       const { data, error: uerr } = await supabase.from('outlets').update(fields).eq('id', id).select().single();
       if (uerr) throw uerr;
       return res.status(200).json(data);
